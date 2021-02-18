@@ -8,7 +8,7 @@ import (
 
 func main() {
 	cpu := cpu.NewCPU()
-	cycles := 2
+	cycles := 7
 	cpu.Execute(&cycles)
 }
 

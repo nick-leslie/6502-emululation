@@ -27,8 +27,13 @@ type CPU struct {
 }
 
 const (
+	//Acumulator instructions
 	//LDAI loads acumulator imediant
 	LDAI byte = 0xA9
+
+	//jump instructions
+	JMPA byte = 0x4c
+	JMPI byte = 0x6C
 )
 
 //NewCPU creates a new cpu
@@ -51,8 +56,8 @@ func (cpu *CPU) FetchByte(cycle *int) byte {
 func (cpu *CPU) ResetCPU() {
 	cpu.ProgramCounter = 0xfffc // set progtram counter to start of program exicution
 	cycles := 3
-	cpu.JumpIndirect(&cycles)
-	fmt.Printf("%x\n", cpu.ProgramCounter)
+	cpu.JumpDirect(&cycles)
+	fmt.Printf("Program counter:%x\n", cpu.ProgramCounter)
 	cpu.StackPointer = 0x0100     // set stack pointer to start of stack
 	cpu.X, cpu.Y, cpu.A = 0, 0, 0 // clear the registers
 }
@@ -62,24 +67,42 @@ func (cpu *CPU) Execute(cycle *int) {
 	//continue unill there are no more cycles
 	for *cycle > 0 {
 		opCode := cpu.FetchByte(cycle)
-		fmt.Println(opCode)
+		fmt.Printf("opCode:%x \n", opCode)
 		switch opCode {
 		case LDAI:
 			cpu.LoadAcumulatorImedient(cycle)
 			break
+		case JMPA:
+			cpu.JumpDirect(cycle)
+			break
+		case JMPI:
+			cpu.JumpIndirect(cycle)
 		default:
 			fmt.Println("Instruction not handled")
 			break
 		}
-		fmt.Printf("%x", cpu.A)
+		fmt.Printf("Acumulator:%x\n", cpu.A)
 		//this is where we switch on opcodes
 	}
 }
 
 //-----------------------------------------instruction fucntions
 
-//JumpIndirect jumps to an adress point indirectly should take 3 cycles
+//JumpDirect jumps to the adress spesifiyed by the two folowing bytes
+func (cpu *CPU) JumpDirect(cycle *int) {
+	address := cpu.grabAdress(cycle)
+	fmt.Printf("Program counter:%x\n", address)
+	*cycle--
+	cpu.ProgramCounter = address
+}
+
 func (cpu *CPU) JumpIndirect(cycle *int) {
+	//jumps to spesifiyed memory location
+	cpu.JumpDirect(cycle)
+	address := cpu.grabAdress(cycle)
+	cpu.ProgramCounter = address
+}
+func (cpu *CPU) grabAdress(cycle *int) uint16 {
 	bytes := make([]byte, 2)
 	i := 0
 	//remember if there is the wrong amount of cycles it will fail
@@ -88,9 +111,8 @@ func (cpu *CPU) JumpIndirect(cycle *int) {
 		bytes[i] = cpu.FetchByte(cycle)
 		i++
 	}
-	*cycle--
 	address := binary.LittleEndian.Uint16(bytes)
-	cpu.ProgramCounter = address
+	return address
 }
 
 //LoadAcumulatorImedient loads a byte into the acumulaor register
@@ -101,8 +123,12 @@ func (cpu *CPU) LoadAcumulatorImedient(cycle *int) {
 	//checks if A = 0
 	if cpu.A == 0 {
 		cpu.Flags.zero = true
+	} else {
+		cpu.Flags.zero = true
 	}
 	if (0b10000000 & cpu.A) == 0b10000000 {
 		cpu.Flags.negitive = true
+	} else {
+		cpu.Flags.negitive = false
 	}
 }
