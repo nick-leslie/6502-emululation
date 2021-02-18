@@ -8,7 +8,8 @@ import (
 
 func main() {
 	cpu := cpu.NewCPU()
-	cpu.ResetCPU()
+	cycles := 2
+	cpu.Execute(&cycles)
 }
 
 //this is all to show for presintaions

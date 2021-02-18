@@ -22,9 +22,14 @@ type CPU struct {
 	ProgramCounter uint16         // the pointer to the currently acsest locations
 	StackPointer   uint16         //pointer to the current locaion in the stack the second 255 bytes of memory
 	X, Y, A        byte           // reisters x y and accumulator
-	State          status         // the state flags
+	Flags          status         // the state flags
 	mem            *memory.Memory // memory
 }
+
+const (
+	//LDAI loads acumulator imediant
+	LDAI byte = 0xA9
+)
 
 //NewCPU creates a new cpu
 func NewCPU() CPU {
@@ -45,7 +50,8 @@ func (cpu *CPU) FetchByte(cycle *int) byte {
 //ResetCPU resets the cpu to startup
 func (cpu *CPU) ResetCPU() {
 	cpu.ProgramCounter = 0xfffc // set progtram counter to start of program exicution
-	cpu.JumpIndirect(3)
+	cycles := 3
+	cpu.JumpIndirect(&cycles)
 	fmt.Printf("%x\n", cpu.ProgramCounter)
 	cpu.StackPointer = 0x0100     // set stack pointer to start of stack
 	cpu.X, cpu.Y, cpu.A = 0, 0, 0 // clear the registers
@@ -53,11 +59,24 @@ func (cpu *CPU) ResetCPU() {
 
 //Execute Runs instructions for however many cycles on the CPU
 func (cpu *CPU) Execute(cycle *int) {
+	//continue unill there are no more cycles
 	for *cycle > 0 {
 		opCode := cpu.FetchByte(cycle)
 		fmt.Println(opCode)
+		switch opCode {
+		case LDAI:
+			cpu.LoadAcumulatorImedient(cycle)
+			break
+		default:
+			fmt.Println("Instruction not handled")
+			break
+		}
+		fmt.Printf("%x", cpu.A)
+		//this is where we switch on opcodes
 	}
 }
+
+//-----------------------------------------instruction fucntions
 
 //JumpIndirect jumps to an adress point indirectly should take 3 cycles
 func (cpu *CPU) JumpIndirect(cycle *int) {
@@ -69,7 +88,21 @@ func (cpu *CPU) JumpIndirect(cycle *int) {
 		bytes[i] = cpu.FetchByte(cycle)
 		i++
 	}
-	fmt.Println(i)
+	*cycle--
 	address := binary.LittleEndian.Uint16(bytes)
 	cpu.ProgramCounter = address
+}
+
+//LoadAcumulatorImedient loads a byte into the acumulaor register
+func (cpu *CPU) LoadAcumulatorImedient(cycle *int) {
+	value := cpu.FetchByte(cycle)
+	cpu.A = value
+	//set flags
+	//checks if A = 0
+	if cpu.A == 0 {
+		cpu.Flags.zero = true
+	}
+	if (0b10000000 & cpu.A) == 0b10000000 {
+		cpu.Flags.negitive = true
+	}
 }
