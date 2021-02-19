@@ -7,6 +7,14 @@ import (
 	"local.com/memory"
 )
 
+//CPU is a emulation of a 6502 CPU
+type CPU struct {
+	ProgramCounter uint16         // the pointer to the currently acsest locations
+	StackPointer   uint16         //pointer to the current locaion in the stack the second 255 bytes of memory
+	X, Y, A        byte           // reisters x y and accumulator
+	Flags          status         // the state flags
+	Mem            *memory.Memory // memory
+}
 type status struct {
 	negitive bool
 	zero     bool
@@ -17,39 +25,28 @@ type status struct {
 	interupt bool
 }
 
-//CPU is a emulation of a 6502 CPU
-type CPU struct {
-	ProgramCounter uint16         // the pointer to the currently acsest locations
-	StackPointer   uint16         //pointer to the current locaion in the stack the second 255 bytes of memory
-	X, Y, A        byte           // reisters x y and accumulator
-	Flags          status         // the state flags
-	mem            *memory.Memory // memory
-}
-
 const (
 	//Acumulator instructions
+
 	//LDAI loads acumulator imediant
 	LDAI byte = 0xA9
 
-	//jump instructions
+	//jump instructions ------------------------------------
+
+	//JMPA Jumps to a direct location in memory takes 3 cycles
 	JMPA byte = 0x4c
+	//JMPI jumps to an indirecnt locaion in memory takes 5 cycles
 	JMPI byte = 0x6C
+
+	//-------------------------------------------------------
 )
 
 //NewCPU creates a new cpu
 func NewCPU() CPU {
 	cpu := new(CPU)
-	cpu.mem = memory.CreateMemory() // resets memory
+	cpu.Mem = memory.CreateMemory() // resets memory
 	cpu.ResetCPU()                  //resets cpu
 	return *cpu                     //returns the initlised cpu
-}
-
-//FetchByte grabs a byte from memory uses a cycle and incruments the program counter
-func (cpu *CPU) FetchByte(cycle *int) byte {
-	targetByte := cpu.mem.Memory[cpu.ProgramCounter]
-	cpu.ProgramCounter++
-	*cycle--
-	return targetByte
 }
 
 //ResetCPU resets the cpu to startup
@@ -60,6 +57,14 @@ func (cpu *CPU) ResetCPU() {
 	fmt.Printf("Program counter:%x\n", cpu.ProgramCounter)
 	cpu.StackPointer = 0x0100     // set stack pointer to start of stack
 	cpu.X, cpu.Y, cpu.A = 0, 0, 0 // clear the registers
+}
+
+//FetchByte grabs a byte from memory uses a cycle and incruments the program counter
+func (cpu *CPU) FetchByte(cycle *int) byte {
+	targetByte := cpu.Mem.Memory[cpu.ProgramCounter]
+	cpu.ProgramCounter++
+	*cycle--
+	return targetByte
 }
 
 //Execute Runs instructions for however many cycles on the CPU
@@ -96,6 +101,7 @@ func (cpu *CPU) JumpDirect(cycle *int) {
 	cpu.ProgramCounter = address
 }
 
+//JumpIndirect first jumps to locaions after the instruction then reads the byte and the next byte at that locaion for new adress
 func (cpu *CPU) JumpIndirect(cycle *int) {
 	//jumps to spesifiyed memory location
 	cpu.JumpDirect(cycle)
@@ -126,6 +132,7 @@ func (cpu *CPU) LoadAcumulatorImedient(cycle *int) {
 	} else {
 		cpu.Flags.zero = true
 	}
+	//this might be bugged becuse of numbers like 0xffff
 	if (0b10000000 & cpu.A) == 0b10000000 {
 		cpu.Flags.negitive = true
 	} else {
