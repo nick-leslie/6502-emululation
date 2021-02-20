@@ -30,6 +30,8 @@ const (
 
 	//LDAI loads acumulator imediant
 	LDAI byte = 0xA9
+	//LDAZ loads acumulator from zero page
+	LDAZ byte = 0xA5
 
 	//jump instructions ------------------------------------
 
@@ -57,12 +59,24 @@ func (cpu *CPU) ResetCPU() {
 	fmt.Printf("Program counter:%x\n", cpu.ProgramCounter)
 	cpu.StackPointer = 0x0100     // set stack pointer to start of stack
 	cpu.X, cpu.Y, cpu.A = 0, 0, 0 // clear the registers
+	cpu.Flags.zero = false
+	cpu.Flags.negitive = false
+	cpu.Flags.overflow = false
+	cpu.Flags.cary = false
+	cpu.Flags.breaks = false
+	cpu.Flags.decimal = false
+	cpu.Flags.interupt = false
 }
 
 //FetchByte grabs a byte from memory uses a cycle and incruments the program counter
 func (cpu *CPU) FetchByte(cycle *int) byte {
 	targetByte := cpu.Mem.Memory[cpu.ProgramCounter]
 	cpu.ProgramCounter++
+	*cycle--
+	return targetByte
+}
+func (cpu *CPU) FetchByteAtZeroPage(cycle *int, MemLoc byte) byte {
+	targetByte := cpu.Mem.Memory[MemLoc]
 	*cycle--
 	return targetByte
 }
@@ -77,6 +91,8 @@ func (cpu *CPU) Execute(cycle *int) {
 		case LDAI:
 			cpu.LoadAcumulatorImedient(cycle)
 			break
+		case LDAZ:
+			cpu.LoadAcumulatorZeroPage(cycle)
 		case JMPA:
 			cpu.JumpDirect(cycle)
 			break
@@ -121,19 +137,84 @@ func (cpu *CPU) grabAdress(cycle *int) uint16 {
 	return address
 }
 
-//LoadAcumulatorImedient loads a byte into the acumulaor register
+//--------------------------------------------------------------acumulator
+
+//LoadAcumulatorImedient loads the byte after the adress into into the acumulaor register
 func (cpu *CPU) LoadAcumulatorImedient(cycle *int) {
 	value := cpu.FetchByte(cycle)
+	cpu.ManipulateAcumulator(value)
+}
+
+//LoadAcumulatorZeroPage loads acummulator with an adress within the zero page
+func (cpu *CPU) LoadAcumulatorZeroPage(cycle *int) {
+	value := cpu.FetchByteAtZeroPage(cycle, cpu.FetchByte(cycle))
+	cpu.ManipulateAcumulator(value)
+}
+
+//ManipulateAcumulator is the fucnction that manipulates the acumulator register addionaly it configers the flag
+func (cpu *CPU) ManipulateAcumulator(value byte) {
 	cpu.A = value
 	//set flags
 	//checks if A = 0
-	if cpu.A == 0 {
+	if cpu.A == 0x00 {
 		cpu.Flags.zero = true
 	} else {
-		cpu.Flags.zero = true
+		cpu.Flags.zero = false
 	}
 	//this might be bugged becuse of numbers like 0xffff
 	if (0b10000000 & cpu.A) == 0b10000000 {
+		cpu.Flags.negitive = true
+	} else {
+		cpu.Flags.negitive = false
+	}
+}
+
+//---------------------------------- x register
+
+//LoadXImedient loads the next value into the X register
+func (cpu *CPU) LoadXImedient() {
+	value := cpu.FetchByte(cycle)
+	cpu.ManipulateXRegister(value)
+}
+
+//ManipulateXRegister Changes the X Register and sets the flags
+func (cpu *CPU) ManipulateXRegister(value byte) {
+	cpu.X = value
+	//set flags
+	//checks if A = 0
+	if cpu.X == 0x00 {
+		cpu.Flags.zero = true
+	} else {
+		cpu.Flags.zero = false
+	}
+	//this might be bugged becuse of numbers like 0xffff
+	if (0b10000000 & cpu.X) == 0b10000000 {
+		cpu.Flags.negitive = true
+	} else {
+		cpu.Flags.negitive = false
+	}
+}
+
+//--------------------------------- Y register
+
+//LoadYImedient loads the next value into the X register
+func (cpu *CPU) LoadYImedient() {
+	value := cpu.FetchByte(cycle)
+	cpu.ManipulateXRegister(value)
+}
+
+//ManipulateYRegister Changes the Y Register and sets the flags
+func (cpu *CPU) ManipulateYRegister(value byte) {
+	cpu.Y = value
+	//set flags
+	//checks if A = 0
+	if cpu.Y == 0x00 {
+		cpu.Flags.zero = true
+	} else {
+		cpu.Flags.zero = false
+	}
+	//this might be bugged becuse of numbers like 0xffff
+	if (0b10000000 & cpu.Y) == 0b10000000 {
 		cpu.Flags.negitive = true
 	} else {
 		cpu.Flags.negitive = false

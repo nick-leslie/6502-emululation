@@ -42,6 +42,27 @@ func TestLoadAcumulatorImedient(t *testing.T) {
 		}
 	}
 }
+func TestLoadAcumulatorZero(t *testing.T) {
+	cpu := NewCPU()
+	Program := make(map[uint32]byte)
+	Program[0xfffc] = 0xaa
+	Program[0xfffd] = 0xbb
+	Program[0xbbaa] = 0xA5
+	Program[0xbbab] = 0xCC
+	Program[0x00cc] = 0x55
+	cpu.Mem.ManipulateMemory(Program)
+	cpu.ResetCPU()
+	cycles := 2
+	cpu.Execute(&cycles)
+	//add tests for flags
+	if cpu.A != 0x55 {
+		t.Errorf("Acumulator:%x wanted:%x\nProgram counter:%x", cpu.A, 0x55, cpu.ProgramCounter)
+	} else {
+		if cpu.Flags.zero == true {
+			t.Errorf("Zero flag incorect Acumulator:%x wanted:%x\nProgram counter:%x", cpu.A, 0x55, cpu.ProgramCounter)
+		}
+	}
+}
 
 //jump
 func TestJumpImedient(t *testing.T) {
