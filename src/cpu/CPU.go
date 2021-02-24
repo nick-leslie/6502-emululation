@@ -33,6 +33,16 @@ const (
 	//LDAZ loads acumulator from zero page
 	LDAZ byte = 0xA5
 
+	// X  register Instructions -----------------------
+
+	//LDXI loads value into X register in imedint mode in imident mode 2 cycles
+	LDXI byte = 0xA2
+
+	//Y register instructions--------------------------
+
+	//LDYI loads value into Y register in imeient mode in imident mode 2 cycles
+	LDYI byte = 0xA0
+
 	//jump instructions ------------------------------------
 
 	//JMPA Jumps to a direct location in memory takes 3 cycles
@@ -40,6 +50,16 @@ const (
 	//JMPI jumps to an indirecnt locaion in memory takes 5 cycles
 	JMPI byte = 0x6C
 
+	//logic instructions-------------------------------------
+
+	//ANDI ands the acummulator and the next byte in memory in imident mode 2 cycles
+	ANDI byte = 0x29
+
+	//XORI or's the acummulator and the next byte in memory in imident mode 2 cycles
+	XORI byte = 0x49
+
+	//ORAI or's the acumulator and the next byte in memorty in imident mode 2 cyclse
+	ORAI byte = 0x09
 	//-------------------------------------------------------
 )
 
@@ -75,6 +95,8 @@ func (cpu *CPU) FetchByte(cycle *int) byte {
 	*cycle--
 	return targetByte
 }
+
+//FetchByteAtZeroPage this fetches a byte with a zero page adress
 func (cpu *CPU) FetchByteAtZeroPage(cycle *int, MemLoc byte) byte {
 	targetByte := cpu.Mem.Memory[MemLoc]
 	*cycle--
@@ -93,13 +115,29 @@ func (cpu *CPU) Execute(cycle *int) {
 			break
 		case LDAZ:
 			cpu.LoadAcumulatorZeroPage(cycle)
+			break
+		case LDXI:
+			cpu.LoadXImedient(cycle)
+			break
+		case LDYI:
+			cpu.LoadYImedient(cycle)
+			break
+		case ANDI:
+			cpu.ANDImedianet(cycle)
+			break
+		case XORI:
+			cpu.EXORImedianant(cycle)
+			break
+		case ORAI:
+			cpu.ORAImedianant(cycle)
+			break
 		case JMPA:
 			cpu.JumpDirect(cycle)
 			break
 		case JMPI:
 			cpu.JumpIndirect(cycle)
 		default:
-			fmt.Println("Instruction not handled")
+			fmt.Printf("Instruction:%x not handled\n", opCode)
 			break
 		}
 		fmt.Printf("Acumulator:%x\n", cpu.A)
@@ -172,7 +210,7 @@ func (cpu *CPU) ManipulateAcumulator(value byte) {
 //---------------------------------- x register
 
 //LoadXImedient loads the next value into the X register
-func (cpu *CPU) LoadXImedient() {
+func (cpu *CPU) LoadXImedient(cycle *int) {
 	value := cpu.FetchByte(cycle)
 	cpu.ManipulateXRegister(value)
 }
@@ -198,9 +236,9 @@ func (cpu *CPU) ManipulateXRegister(value byte) {
 //--------------------------------- Y register
 
 //LoadYImedient loads the next value into the X register
-func (cpu *CPU) LoadYImedient() {
+func (cpu *CPU) LoadYImedient(cycle *int) {
 	value := cpu.FetchByte(cycle)
-	cpu.ManipulateXRegister(value)
+	cpu.ManipulateYRegister(value)
 }
 
 //ManipulateYRegister Changes the Y Register and sets the flags
@@ -220,3 +258,26 @@ func (cpu *CPU) ManipulateYRegister(value byte) {
 		cpu.Flags.negitive = false
 	}
 }
+
+//---------------------------------------- And instruction set
+
+//ANDImedianet ands in imediant mode
+func (cpu *CPU) ANDImedianet(cycle *int) {
+	cpu.A &= cpu.FetchByte(cycle)
+}
+
+//---------------------------------------- Exclusive OR Instruction set
+
+//EXORImedianant does an EXOR on the accumulator in imident mode
+func (cpu *CPU) EXORImedianant(cycle *int) {
+	cpu.A ^= cpu.FetchByte(cycle)
+}
+
+//---------------------------------------- Inclusive OR Instruction set
+
+//ORAImedianant Dose the inclusive or instruction in imideant mode
+func (cpu *CPU) ORAImedianant(cycle *int) {
+	cpu.A = cpu.A | cpu.FetchByte(cycle)
+}
+
+//---------------------------------------- Addtion stuff

@@ -64,6 +64,37 @@ func TestLoadAcumulatorZero(t *testing.T) {
 	}
 }
 
+func TestLoadXImedient(t *testing.T) {
+	cpu := NewCPU()
+	Program := make(map[uint32]byte)
+	Program[0xfffc] = 0xaa
+	Program[0xfffd] = 0xbb
+	Program[0xbbaa] = 0xA2
+	Program[0xbbab] = 0xCC
+	cpu.Mem.ManipulateMemory(Program)
+	cpu.ResetCPU()
+	cycles := 2
+	cpu.Execute(&cycles)
+	if cpu.X != 0xCC {
+		t.Errorf("X register:%x wanted:%x\nProgram counter:%x", cpu.X, 0xCC, cpu.ProgramCounter)
+	}
+}
+func TestLoadYImedient(t *testing.T) {
+	cpu := NewCPU()
+	Program := make(map[uint32]byte)
+	Program[0xfffc] = 0xaa
+	Program[0xfffd] = 0xbb
+	Program[0xbbaa] = 0xA0
+	Program[0xbbab] = 0xCC
+	cpu.Mem.ManipulateMemory(Program)
+	cpu.ResetCPU()
+	cycles := 2
+	cpu.Execute(&cycles)
+	if cpu.Y != 0xCC {
+		t.Errorf("Y register:%x wanted:%x\nProgram counter:%x", cpu.Y, 0xCC, cpu.ProgramCounter)
+	}
+}
+
 //jump
 func TestJumpImedient(t *testing.T) {
 	cpu := NewCPU()
