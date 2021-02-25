@@ -38,11 +38,15 @@ const (
 	//LDXI loads value into X register in imedint mode in imident mode 2 cycles
 	LDXI byte = 0xA2
 
+	//TAX copys X to the acumulator
+	TAX byte = 0xAA
 	//Y register instructions--------------------------
 
 	//LDYI loads value into Y register in imeient mode in imident mode 2 cycles
 	LDYI byte = 0xA0
 
+	//TAY copys Y to the acumulator
+	TAY byte = 0xA8
 	//jump instructions ------------------------------------
 
 	//JMPA Jumps to a direct location in memory takes 3 cycles
@@ -55,11 +59,11 @@ const (
 	//ANDI ands the acummulator and the next byte in memory in imident mode 2 cycles
 	ANDI byte = 0x29
 
-	//XORI or's the acummulator and the next byte in memory in imident mode 2 cycles
-	XORI byte = 0x49
+	//XOR or's the acummulator and the next byte in memory in imident mode 2 cycles
+	XOR byte = 0x49
 
-	//ORAI or's the acumulator and the next byte in memorty in imident mode 2 cyclse
-	ORAI byte = 0x09
+	//ORA or's the acumulator and the next byte in memorty in imident mode 2 cyclse
+	ORA byte = 0x09
 	//-------------------------------------------------------
 )
 
@@ -119,17 +123,22 @@ func (cpu *CPU) Execute(cycle *int) {
 		case LDXI:
 			cpu.LoadXImedient(cycle)
 			break
+		case TAX:
+			cpu.CopyToAcumulator(cycle, cpu.X)
+			break
+		case TAY:
+			cpu.CopyToAcumulator(cycle, cpu.Y)
 		case LDYI:
 			cpu.LoadYImedient(cycle)
 			break
 		case ANDI:
-			cpu.ANDImedianet(cycle)
+			cpu.AND(cycle)
 			break
-		case XORI:
-			cpu.EXORImedianant(cycle)
+		case XOR:
+			cpu.XOR(cycle)
 			break
-		case ORAI:
-			cpu.ORAImedianant(cycle)
+		case ORA:
+			cpu.ORA(cycle)
 			break
 		case JMPA:
 			cpu.JumpDirect(cycle)
@@ -187,6 +196,12 @@ func (cpu *CPU) LoadAcumulatorImedient(cycle *int) {
 func (cpu *CPU) LoadAcumulatorZeroPage(cycle *int) {
 	value := cpu.FetchByteAtZeroPage(cycle, cpu.FetchByte(cycle))
 	cpu.ManipulateAcumulator(value)
+}
+
+//CopyToAcumulator copys the passed in value to the acumulator and decrements a cycle
+func (cpu *CPU) CopyToAcumulator(cycle *int, register byte) {
+	cpu.ManipulateAcumulator(register)
+	*cycle--
 }
 
 //ManipulateAcumulator is the fucnction that manipulates the acumulator register addionaly it configers the flag
@@ -261,23 +276,26 @@ func (cpu *CPU) ManipulateYRegister(value byte) {
 
 //---------------------------------------- And instruction set
 
-//ANDImedianet ands in imediant mode
-func (cpu *CPU) ANDImedianet(cycle *int) {
+//AND ands in imediant mode
+func (cpu *CPU) AND(cycle *int) {
 	cpu.A &= cpu.FetchByte(cycle)
+	fmt.Printf("Acumulator:%x\n", cpu.A)
 }
 
 //---------------------------------------- Exclusive OR Instruction set
 
-//EXORImedianant does an EXOR on the accumulator in imident mode
-func (cpu *CPU) EXORImedianant(cycle *int) {
+//XOR does an XOR on the accumulator in imident mode
+func (cpu *CPU) XOR(cycle *int) {
 	cpu.A ^= cpu.FetchByte(cycle)
+	fmt.Printf("Acumulator:%x\n", cpu.A)
 }
 
 //---------------------------------------- Inclusive OR Instruction set
 
-//ORAImedianant Dose the inclusive or instruction in imideant mode
-func (cpu *CPU) ORAImedianant(cycle *int) {
+//ORA Dose the inclusive or instruction in imideant mode
+func (cpu *CPU) ORA(cycle *int) {
 	cpu.A = cpu.A | cpu.FetchByte(cycle)
+	fmt.Printf("Acumulator:%x\n", cpu.A)
 }
 
 //---------------------------------------- Addtion stuff

@@ -2,13 +2,11 @@ package main
 
 import (
 	"fmt"
-
-	"local.com/cpu"
 )
 
 func main() {
 	cpu := cpu.NewCPU()
-	// //this Inline program sets the starter adress to 0x1311 then it loads 0xfd into the accumulator it jumps to 01av and loads 0x11 into the accumulator
+	//this Inline program sets the starter adress to 0x1311 then it loads 0xfd into the accumulator it jumps to 01av and loads 0x11 into the accumulator
 	cpu.Mem.Memory[0xfffc] = 0x11
 	cpu.Mem.Memory[0xfffd] = 0x13
 	cpu.Mem.Memory[0x1311] = 0xA5
@@ -21,6 +19,7 @@ func main() {
 	cpu.ResetCPU()
 	cycles := 7
 	cpu.Execute(&cycles)
+	//fmt.Printf("%x\n", 0x0f&0xf0)
 }
 
 //this is all to show for presintaions
