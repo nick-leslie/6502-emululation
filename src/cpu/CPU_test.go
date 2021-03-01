@@ -136,30 +136,30 @@ func TestTAX(t *testing.T) {
 	cpu := NewCPU()
 	Program := make(map[uint16]byte)
 	cpu.Mem.SetStartAdress(0xbbaa)
-	Program[0xbbaa] = LDXI
+	Program[0xbbaa] = LDAI
 	Program[0xbbab] = 0xCC
 	Program[0xbbac] = TAX
 	cpu.Mem.ManipulateMemory(Program)
 	cpu.ResetCPU()
 	cycles := 4
 	cpu.Execute(&cycles)
-	if cpu.A != 0xCC {
-		t.Errorf("A register:%x wanted:%x\nProgram counter:%x", cpu.A, 0xCC, cpu.ProgramCounter)
+	if cpu.X != 0xCC {
+		t.Errorf("A register:%x wanted:%x\nProgram counter:%x", cpu.X, 0xCC, cpu.ProgramCounter)
 	}
 }
 func TestTAY(t *testing.T) {
 	cpu := NewCPU()
 	Program := make(map[uint16]byte)
 	cpu.Mem.SetStartAdress(0xbbaa)
-	Program[0xbbaa] = LDYI
+	Program[0xbbaa] = LDAI
 	Program[0xbbab] = 0xCC
 	Program[0xbbac] = TAY
 	cpu.Mem.ManipulateMemory(Program)
 	cpu.ResetCPU()
 	cycles := 4
 	cpu.Execute(&cycles)
-	if cpu.A != 0xCC {
-		t.Errorf("A register:%x wanted:%x\nProgram counter:%x", cpu.A, 0xCC, cpu.ProgramCounter)
+	if cpu.Y != 0xCC {
+		t.Errorf("Y register:%x wanted:%x\nProgram counter:%x", cpu.Y, 0xCC, cpu.ProgramCounter)
 	}
 }
 
@@ -211,5 +211,55 @@ func TestORA(t *testing.T) {
 	cpu.Execute(&cycles)
 	if cpu.A != 0xf0|0x0f {
 		t.Errorf("A register:%x wanted:%x\nProgram counter:%x", cpu.A, 0xf0|0x0f, cpu.ProgramCounter)
+	}
+}
+
+//add tests for TYA TXA
+
+func TestTYA(t *testing.T) {
+	cpu := NewCPU()
+	Program := make(map[uint16]byte)
+	cpu.Mem.SetStartAdress(0xbbaa)
+	Program[0xbbaa] = LDYI
+	Program[0xbbab] = 0xCC
+	Program[0xbbac] = TYA
+	cpu.Mem.ManipulateMemory(Program)
+	cpu.ResetCPU()
+	cycles := 4
+	cpu.Execute(&cycles)
+	if cpu.A != 0xCC {
+		t.Errorf("A register:%x wanted:%x\nProgram counter:%x", cpu.A, 0xCC, cpu.ProgramCounter)
+	}
+}
+func TestTXA(t *testing.T) {
+	cpu := NewCPU()
+	Program := make(map[uint16]byte)
+	cpu.Mem.SetStartAdress(0xbbaa)
+	Program[0xbbaa] = LDXI
+	Program[0xbbab] = 0xCC
+	Program[0xbbac] = TXA
+	cpu.Mem.ManipulateMemory(Program)
+	cpu.ResetCPU()
+	cycles := 4
+	cpu.Execute(&cycles)
+	if cpu.A != 0xCC {
+		t.Errorf("A register:%x wanted:%x\nProgram counter:%x", cpu.A, 0xCC, cpu.ProgramCounter)
+	}
+}
+
+func TestSTAZ(t *testing.T) {
+	cpu := NewCPU()
+	Program := make(map[uint16]byte)
+	cpu.Mem.SetStartAdress(0xbbaa)
+	Program[0xbbaa] = LDAI // 2 cycles
+	Program[0xbbab] = 0xf0 // 1 cycle
+	Program[0xbbac] = STAZ // 3 cycles
+	Program[0xbbad] = 0x0f
+	cpu.Mem.ManipulateMemory(Program)
+	cpu.ResetCPU()
+	cycles := 5
+	cpu.Execute(&cycles)
+	if cpu.A != cpu.Mem.Memory[0x0f] {
+		t.Errorf("A register:%x Memory Value:%x\nProgram counter:%x", cpu.A, cpu.Mem.Memory[0x0f], cpu.ProgramCounter)
 	}
 }

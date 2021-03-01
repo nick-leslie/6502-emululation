@@ -33,12 +33,24 @@ const (
 	//LDAZ loads acumulator from zero page
 	LDAZ byte = 0xA5
 
+	//TXA copys X to accumulator
+	TXA byte = 0x8A
+
+	//TYA copys Y to accumulator
+	TYA byte = 0x98
+
+	//STAZ stores the acumulator in some place in the zero page 3 cycles
+	STAZ byte = 0x85
+
 	// X  register Instructions -----------------------
 
 	//LDXI loads value into X register in imedint mode in imident mode 2 cycles
 	LDXI byte = 0xA2
 
-	//TAX copys X to the acumulator
+	//STXZ stores the X value in the acumulator
+	STXZ byte = 0x86
+
+	//TAX copys accumulator to X
 	TAX byte = 0xAA
 	//Y register instructions--------------------------
 
@@ -47,6 +59,9 @@ const (
 
 	//TAY copys Y to the acumulator
 	TAY byte = 0xA8
+
+	//STYZ stores the y in a zero page
+	STYZ byte = 0x84
 	//jump instructions ------------------------------------
 
 	//JMPA Jumps to a direct location in memory takes 3 cycles
@@ -64,7 +79,8 @@ const (
 
 	//ORA or's the acumulator and the next byte in memorty in imident mode 2 cyclse
 	ORA byte = 0x09
-	//-------------------------------------------------------
+	//------------------------------------------------------- stack operation
+	
 )
 
 //NewCPU creates a new cpu
@@ -123,11 +139,21 @@ func (cpu *CPU) Execute(cycle *int) {
 		case LDXI:
 			cpu.LoadXImedient(cycle)
 			break
+		case STAZ:
+			cpu.StoreAcumulatorZeroPage(cycle)
+			break
 		case TAX:
-			cpu.CopyToAcumulator(cycle, cpu.X)
+			cpu.CopyToRegister(cycle, &cpu.X, cpu.A)
 			break
 		case TAY:
-			cpu.CopyToAcumulator(cycle, cpu.Y)
+			cpu.CopyToRegister(cycle, &cpu.Y, cpu.A)
+			break
+		case TXA:
+			cpu.CopyToRegister(cycle, &cpu.A, cpu.X)
+			break
+		case TYA:
+			cpu.CopyToRegister(cycle, &cpu.A, cpu.Y)
+			break
 		case LDYI:
 			cpu.LoadYImedient(cycle)
 			break
@@ -184,42 +210,55 @@ func (cpu *CPU) grabAdress(cycle *int) uint16 {
 	return address
 }
 
-//--------------------------------------------------------------acumulator
+//--------------------------------------------------------------Genaral registers
 
-//LoadAcumulatorImedient loads the byte after the adress into into the acumulaor register
-func (cpu *CPU) LoadAcumulatorImedient(cycle *int) {
-	value := cpu.FetchByte(cycle)
-	cpu.ManipulateAcumulator(value)
-}
-
-//LoadAcumulatorZeroPage loads acummulator with an adress within the zero page
-func (cpu *CPU) LoadAcumulatorZeroPage(cycle *int) {
-	value := cpu.FetchByteAtZeroPage(cycle, cpu.FetchByte(cycle))
-	cpu.ManipulateAcumulator(value)
-}
-
-//CopyToAcumulator copys the passed in value to the acumulator and decrements a cycle
-func (cpu *CPU) CopyToAcumulator(cycle *int, register byte) {
-	cpu.ManipulateAcumulator(register)
-	*cycle--
-}
-
-//ManipulateAcumulator is the fucnction that manipulates the acumulator register addionaly it configers the flag
-func (cpu *CPU) ManipulateAcumulator(value byte) {
-	cpu.A = value
+//ManipulateRegister Changes the Target register to the value passed in
+func (cpu *CPU) ManipulateRegister(targetRegister *byte, value byte) {
+	*targetRegister = value
 	//set flags
 	//checks if A = 0
-	if cpu.A == 0x00 {
+	if *targetRegister == 0x00 {
 		cpu.Flags.zero = true
 	} else {
 		cpu.Flags.zero = false
 	}
 	//this might be bugged becuse of numbers like 0xffff
-	if (0b10000000 & cpu.A) == 0b10000000 {
+	if (0b10000000 & *targetRegister) == 0b10000000 {
 		cpu.Flags.negitive = true
 	} else {
 		cpu.Flags.negitive = false
 	}
+}
+
+//CopyToRegister copys the passed in value to the targetRegister and decrements a cycle
+func (cpu *CPU) CopyToRegister(cycle *int, target *byte, register byte) {
+	cpu.ManipulateRegister(target, register)
+	*cycle--
+}
+
+func (cpu *CPU) storeInZeroPage(cycle *int, value byte) {
+	ZeroPageadress := cpu.FetchByte(cycle)
+	cpu.Mem.Memory[ZeroPageadress] = value
+	*cycle--
+}
+
+//--------------------------------------------------------------acumulator
+
+//LoadAcumulatorImedient loads the byte after the adress into into the acumulaor register
+func (cpu *CPU) LoadAcumulatorImedient(cycle *int) {
+	value := cpu.FetchByte(cycle)
+	cpu.ManipulateRegister(&cpu.A, value)
+}
+
+//LoadAcumulatorZeroPage loads acummulator with an adress within the zero page
+func (cpu *CPU) LoadAcumulatorZeroPage(cycle *int) {
+	value := cpu.FetchByteAtZeroPage(cycle, cpu.FetchByte(cycle))
+	cpu.ManipulateRegister(&cpu.A, value)
+}
+
+//StoreAcumulatorZeroPage stores the acumulator in a zero page location
+func (cpu *CPU) StoreAcumulatorZeroPage(cycle *int) {
+	cpu.storeInZeroPage(cycle, cpu.A)
 }
 
 //---------------------------------- x register
@@ -227,25 +266,12 @@ func (cpu *CPU) ManipulateAcumulator(value byte) {
 //LoadXImedient loads the next value into the X register
 func (cpu *CPU) LoadXImedient(cycle *int) {
 	value := cpu.FetchByte(cycle)
-	cpu.ManipulateXRegister(value)
+	cpu.ManipulateRegister(&cpu.X, value)
 }
 
-//ManipulateXRegister Changes the X Register and sets the flags
-func (cpu *CPU) ManipulateXRegister(value byte) {
-	cpu.X = value
-	//set flags
-	//checks if A = 0
-	if cpu.X == 0x00 {
-		cpu.Flags.zero = true
-	} else {
-		cpu.Flags.zero = false
-	}
-	//this might be bugged becuse of numbers like 0xffff
-	if (0b10000000 & cpu.X) == 0b10000000 {
-		cpu.Flags.negitive = true
-	} else {
-		cpu.Flags.negitive = false
-	}
+//StoreXZeroPage stores the x value in the zero page
+func (cpu *CPU) StoreXZeroPage(cycle *int) {
+	cpu.storeInZeroPage(cycle, cpu.X)
 }
 
 //--------------------------------- Y register
@@ -253,25 +279,12 @@ func (cpu *CPU) ManipulateXRegister(value byte) {
 //LoadYImedient loads the next value into the X register
 func (cpu *CPU) LoadYImedient(cycle *int) {
 	value := cpu.FetchByte(cycle)
-	cpu.ManipulateYRegister(value)
+	cpu.ManipulateRegister(&cpu.Y, value)
 }
 
-//ManipulateYRegister Changes the Y Register and sets the flags
-func (cpu *CPU) ManipulateYRegister(value byte) {
-	cpu.Y = value
-	//set flags
-	//checks if A = 0
-	if cpu.Y == 0x00 {
-		cpu.Flags.zero = true
-	} else {
-		cpu.Flags.zero = false
-	}
-	//this might be bugged becuse of numbers like 0xffff
-	if (0b10000000 & cpu.Y) == 0b10000000 {
-		cpu.Flags.negitive = true
-	} else {
-		cpu.Flags.negitive = false
-	}
+//StoreYZeroPage  stores the y value in ther zero page
+func (cpu *CPU) StoreYZeroPage(cycle *int) {
+	cpu.storeInZeroPage(cycle, cpu.Y)
 }
 
 //---------------------------------------- And instruction set
