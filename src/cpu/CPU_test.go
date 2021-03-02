@@ -263,3 +263,35 @@ func TestSTAZ(t *testing.T) {
 		t.Errorf("A register:%x Memory Value:%x\nProgram counter:%x", cpu.A, cpu.Mem.Memory[0x0f], cpu.ProgramCounter)
 	}
 }
+func TestSTXZ(t *testing.T) {
+	cpu := NewCPU()
+	Program := make(map[uint16]byte)
+	cpu.Mem.SetStartAdress(0xbbaa)
+	Program[0xbbaa] = LDXI // 2 cycles
+	Program[0xbbab] = 0xf0 // 1 cycle
+	Program[0xbbac] = STXZ // 3 cycles
+	Program[0xbbad] = 0x0f
+	cpu.Mem.ManipulateMemory(Program)
+	cpu.ResetCPU()
+	cycles := 5
+	cpu.Execute(&cycles)
+	if cpu.X != cpu.Mem.Memory[0x0f] {
+		t.Errorf("A register:%x Memory Value:%x\nProgram counter:%x", cpu.A, cpu.Mem.Memory[0x0f], cpu.ProgramCounter)
+	}
+}
+func TestSTYZ(t *testing.T) {
+	cpu := NewCPU()
+	Program := make(map[uint16]byte)
+	cpu.Mem.SetStartAdress(0xbbaa)
+	Program[0xbbaa] = LDYI // 2 cycles
+	Program[0xbbab] = 0xf0 // 1 cycle
+	Program[0xbbac] = STYZ // 3 cycles
+	Program[0xbbad] = 0x0f
+	cpu.Mem.ManipulateMemory(Program)
+	cpu.ResetCPU()
+	cycles := 5
+	cpu.Execute(&cycles)
+	if cpu.Y != cpu.Mem.Memory[0x0f] {
+		t.Errorf("A register:%x Memory Value:%x\nProgram counter:%x", cpu.A, cpu.Mem.Memory[0x0f], cpu.ProgramCounter)
+	}
+}

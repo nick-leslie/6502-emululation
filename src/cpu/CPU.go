@@ -10,7 +10,7 @@ import (
 //CPU is a emulation of a 6502 CPU
 type CPU struct {
 	ProgramCounter uint16         // the pointer to the currently acsest locations
-	StackPointer   uint16         //pointer to the current locaion in the stack the second 255 bytes of memory
+	StackPointer   byte           //pointer to the current locaion in the stack the second 255 bytes of memory
 	X, Y, A        byte           // reisters x y and accumulator
 	Flags          status         // the state flags
 	Mem            *memory.Memory // memory
@@ -80,7 +80,7 @@ const (
 	//ORA or's the acumulator and the next byte in memorty in imident mode 2 cyclse
 	ORA byte = 0x09
 	//------------------------------------------------------- stack operation
-	
+
 )
 
 //NewCPU creates a new cpu
@@ -139,6 +139,9 @@ func (cpu *CPU) Execute(cycle *int) {
 		case LDXI:
 			cpu.LoadXImedient(cycle)
 			break
+		case STXZ:
+			cpu.StoreXZeroPage(cycle)
+			break
 		case STAZ:
 			cpu.StoreAcumulatorZeroPage(cycle)
 			break
@@ -156,6 +159,9 @@ func (cpu *CPU) Execute(cycle *int) {
 			break
 		case LDYI:
 			cpu.LoadYImedient(cycle)
+			break
+		case STYZ:
+			cpu.StoreYZeroPage(cycle)
 			break
 		case ANDI:
 			cpu.AND(cycle)
@@ -312,3 +318,5 @@ func (cpu *CPU) ORA(cycle *int) {
 }
 
 //---------------------------------------- Addtion stuff
+
+//---------------------------------------- stack stuff
