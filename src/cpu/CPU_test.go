@@ -295,3 +295,9 @@ func TestSTYZ(t *testing.T) {
 		t.Errorf("A register:%x Memory Value:%x\nProgram counter:%x", cpu.A, cpu.Mem.Memory[0x0f], cpu.ProgramCounter)
 	}
 }
+
+func TestStackAddion(t *testing.T) {
+	if 0x01ff != 0x0100+0xff {
+		t.Errorf("%x", 0x0100+0xff)
+	}
+}

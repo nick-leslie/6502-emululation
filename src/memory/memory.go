@@ -33,6 +33,11 @@ func (mem *Memory) ManipulateMemory(instructionSet map[uint16]byte) {
 	fmt.Printf("called manipulate memory\n")
 }
 
+//ManipulateMemoryInStack changes memory within the stack
+func (mem *Memory) ManipulateMemoryInStack(value byte, adress byte) {
+	//mem.Memory[0x0100+adress] = value
+}
+
 //SetStartAdress sets the start adress
 func (mem *Memory) SetStartAdress(address uint16) {
 	b := make([]byte, 2)

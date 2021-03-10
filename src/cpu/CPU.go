@@ -28,9 +28,9 @@ type status struct {
 const (
 	//Acumulator instructions
 
-	//LDAI loads acumulator imediant
+	//LDAI loads acumulator imediant 2 cycles
 	LDAI byte = 0xA9
-	//LDAZ loads acumulator from zero page
+	//LDAZ loads acumulator from zero page 3 cycles
 	LDAZ byte = 0xA5
 
 	//TXA copys X to accumulator
@@ -81,6 +81,8 @@ const (
 	ORA byte = 0x09
 	//------------------------------------------------------- stack operation
 
+	//TXS transfers X to stack 2 cycles
+	TXS byte = 0x9A
 )
 
 //NewCPU creates a new cpu
@@ -97,7 +99,7 @@ func (cpu *CPU) ResetCPU() {
 	cycles := 3
 	cpu.JumpDirect(&cycles)
 	fmt.Printf("Program counter:%x\n", cpu.ProgramCounter)
-	cpu.StackPointer = 0x0100     // set stack pointer to start of stack
+	cpu.StackPointer = 0x00       // start of the stack is at 0x0100 end is 0x01ff set stack pointer to start of stack stack assumes start is always within 100
 	cpu.X, cpu.Y, cpu.A = 0, 0, 0 // clear the registers
 	cpu.Flags.zero = false
 	cpu.Flags.negitive = false
@@ -140,10 +142,10 @@ func (cpu *CPU) Execute(cycle *int) {
 			cpu.LoadXImedient(cycle)
 			break
 		case STXZ:
-			cpu.StoreXZeroPage(cycle)
+			cpu.storeInZeroPage(cycle, cpu.X)
 			break
 		case STAZ:
-			cpu.StoreAcumulatorZeroPage(cycle)
+			cpu.storeInZeroPage(cycle, cpu.A)
 			break
 		case TAX:
 			cpu.CopyToRegister(cycle, &cpu.X, cpu.A)
@@ -161,7 +163,7 @@ func (cpu *CPU) Execute(cycle *int) {
 			cpu.LoadYImedient(cycle)
 			break
 		case STYZ:
-			cpu.StoreYZeroPage(cycle)
+			cpu.storeInZeroPage(cycle, cpu.Y)
 			break
 		case ANDI:
 			cpu.AND(cycle)
@@ -177,6 +179,10 @@ func (cpu *CPU) Execute(cycle *int) {
 			break
 		case JMPI:
 			cpu.JumpIndirect(cycle)
+			break
+		case TXS:
+			cpu.TransferXtoStackPointer(cycle)
+			break
 		default:
 			fmt.Printf("Instruction:%x not handled\n", opCode)
 			break
@@ -188,21 +194,6 @@ func (cpu *CPU) Execute(cycle *int) {
 
 //-----------------------------------------instruction fucntions
 
-//JumpDirect jumps to the adress spesifiyed by the two folowing bytes
-func (cpu *CPU) JumpDirect(cycle *int) {
-	address := cpu.grabAdress(cycle)
-	fmt.Printf("Program counter:%x\n", address)
-	*cycle--
-	cpu.ProgramCounter = address
-}
-
-//JumpIndirect first jumps to locaions after the instruction then reads the byte and the next byte at that locaion for new adress
-func (cpu *CPU) JumpIndirect(cycle *int) {
-	//jumps to spesifiyed memory location
-	cpu.JumpDirect(cycle)
-	address := cpu.grabAdress(cycle)
-	cpu.ProgramCounter = address
-}
 func (cpu *CPU) grabAdress(cycle *int) uint16 {
 	bytes := make([]byte, 2)
 	i := 0
@@ -262,11 +253,6 @@ func (cpu *CPU) LoadAcumulatorZeroPage(cycle *int) {
 	cpu.ManipulateRegister(&cpu.A, value)
 }
 
-//StoreAcumulatorZeroPage stores the acumulator in a zero page location
-func (cpu *CPU) StoreAcumulatorZeroPage(cycle *int) {
-	cpu.storeInZeroPage(cycle, cpu.A)
-}
-
 //---------------------------------- x register
 
 //LoadXImedient loads the next value into the X register
@@ -275,22 +261,12 @@ func (cpu *CPU) LoadXImedient(cycle *int) {
 	cpu.ManipulateRegister(&cpu.X, value)
 }
 
-//StoreXZeroPage stores the x value in the zero page
-func (cpu *CPU) StoreXZeroPage(cycle *int) {
-	cpu.storeInZeroPage(cycle, cpu.X)
-}
-
 //--------------------------------- Y register
 
 //LoadYImedient loads the next value into the X register
 func (cpu *CPU) LoadYImedient(cycle *int) {
 	value := cpu.FetchByte(cycle)
 	cpu.ManipulateRegister(&cpu.Y, value)
-}
-
-//StoreYZeroPage  stores the y value in ther zero page
-func (cpu *CPU) StoreYZeroPage(cycle *int) {
-	cpu.storeInZeroPage(cycle, cpu.Y)
 }
 
 //---------------------------------------- And instruction set
@@ -320,3 +296,28 @@ func (cpu *CPU) ORA(cycle *int) {
 //---------------------------------------- Addtion stuff
 
 //---------------------------------------- stack stuff
+//TODO on jsr to stack look at ben eater video
+
+//TransferXtoStackPointer ,oves X into The stack Pointer
+func (cpu *CPU) TransferXtoStackPointer(cycle *int) {
+	cpu.StackPointer = cpu.X
+	*cycle--
+}
+
+//---------------------------------------- basic jump
+
+//JumpDirect jumps to the adress spesifiyed by the two folowing bytes
+func (cpu *CPU) JumpDirect(cycle *int) {
+	address := cpu.grabAdress(cycle)
+	fmt.Printf("Program counter:%x\n", address)
+	*cycle--
+	cpu.ProgramCounter = address
+}
+
+//JumpIndirect first jumps to locaions after the instruction then reads the byte and the next byte at that locaion for new adress
+func (cpu *CPU) JumpIndirect(cycle *int) {
+	//jumps to spesifiyed memory location
+	cpu.JumpDirect(cycle)
+	address := cpu.grabAdress(cycle)
+	cpu.ProgramCounter = address
+}

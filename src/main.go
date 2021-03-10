@@ -2,23 +2,26 @@ package main
 
 import (
 	"fmt"
+
+	"local.com/cpu"
 )
 
 func main() {
-	cpu := cpu.NewCPU()
+	CPU := cpu.NewCPU()
 	//this Inline program sets the starter adress to 0x1311 then it loads 0xfd into the accumulator it jumps to 01av and loads 0x11 into the accumulator
-	cpu.Mem.Memory[0xfffc] = 0x11
-	cpu.Mem.Memory[0xfffd] = 0x13
-	cpu.Mem.Memory[0x1311] = 0xA5
-	cpu.Mem.Memory[0x1312] = 0xfd
-	cpu.Mem.Memory[0x00fd] = 0x4c
-	cpu.Mem.Memory[0x1314] = 0xab
-	cpu.Mem.Memory[0x1315] = 0x01
-	cpu.Mem.Memory[0x01ab] = 0xA9
-	cpu.Mem.Memory[0x01ac] = 0x11
-	cpu.ResetCPU()
-	cycles := 7
-	cpu.Execute(&cycles)
+	CPU.Mem.Memory[0xfffc] = 0x11     // set least signifecent bit of adress
+	CPU.Mem.Memory[0xfffd] = 0x13     // set most significent bit of adress
+	CPU.Mem.Memory[0x1311] = cpu.LDAZ // Load accumulator zero page 3 cycles
+	CPU.Mem.Memory[0x1312] = 0xfd     //zero page adress
+	CPU.Mem.Memory[0x00fd] = 0x4c     //acumulator value value
+	CPU.Mem.Memory[0x1313] = cpu.JMPA //jump 3 cycles
+	CPU.Mem.Memory[0x1314] = 0xab     // set least signifecent bit of jump adress
+	CPU.Mem.Memory[0x1315] = 0x01     // set most signifecent bit of jump adress
+	CPU.Mem.Memory[0x01ab] = cpu.LDAI // loads acumulator with next byte 2 cycles
+	CPU.Mem.Memory[0x01ac] = 0x11     // set accumulator
+	CPU.ResetCPU()
+	cycles := 8
+	CPU.Execute(&cycles)
 	//fmt.Printf("%x\n", 0x0f&0xf0)
 }
 
