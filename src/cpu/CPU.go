@@ -166,13 +166,13 @@ func (cpu *CPU) Execute(cycle *int) {
 			cpu.storeInZeroPage(cycle, cpu.Y)
 			break
 		case ANDI:
-			cpu.AND(cycle)
+			cpu.A &= cpu.FetchByte(cycle)
 			break
 		case XOR:
-			cpu.XOR(cycle)
+			cpu.A ^= cpu.FetchByte(cycle)
 			break
 		case ORA:
-			cpu.ORA(cycle)
+			cpu.A = cpu.A | cpu.FetchByte(cycle)
 			break
 		case JMPA:
 			cpu.JumpDirect(cycle)
@@ -267,30 +267,6 @@ func (cpu *CPU) LoadXImedient(cycle *int) {
 func (cpu *CPU) LoadYImedient(cycle *int) {
 	value := cpu.FetchByte(cycle)
 	cpu.ManipulateRegister(&cpu.Y, value)
-}
-
-//---------------------------------------- And instruction set
-
-//AND ands in imediant mode
-func (cpu *CPU) AND(cycle *int) {
-	cpu.A &= cpu.FetchByte(cycle)
-	fmt.Printf("Acumulator:%x\n", cpu.A)
-}
-
-//---------------------------------------- Exclusive OR Instruction set
-
-//XOR does an XOR on the accumulator in imident mode
-func (cpu *CPU) XOR(cycle *int) {
-	cpu.A ^= cpu.FetchByte(cycle)
-	fmt.Printf("Acumulator:%x\n", cpu.A)
-}
-
-//---------------------------------------- Inclusive OR Instruction set
-
-//ORA Dose the inclusive or instruction in imideant mode
-func (cpu *CPU) ORA(cycle *int) {
-	cpu.A = cpu.A | cpu.FetchByte(cycle)
-	fmt.Printf("Acumulator:%x\n", cpu.A)
 }
 
 //---------------------------------------- Addtion stuff
