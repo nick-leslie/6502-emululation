@@ -83,6 +83,12 @@ const (
 
 	//TXS transfers X to stack 2 cycles
 	TXS byte = 0x9A
+
+	//TSX transfers Stack pointer to X
+	TSX byte = 0xBA
+
+	//PHA pushes coppy of acumulator to stack
+	PHA byte = 0x48
 )
 
 //NewCPU creates a new cpu
@@ -183,6 +189,13 @@ func (cpu *CPU) Execute(cycle *int) {
 		case TXS:
 			cpu.TransferXtoStackPointer(cycle)
 			break
+		case TSX:
+			cpu.X = cpu.StackPointer
+			*cycle--
+			break
+		case PHA:
+			cpu.pushToStack(cpu.A, cycle)
+			*cycle--
 		default:
 			fmt.Printf("Instruction:%x not handled\n", opCode)
 			break
@@ -207,7 +220,18 @@ func (cpu *CPU) grabAdress(cycle *int) uint16 {
 	return address
 }
 
-//--------------------------------------------------------------Genaral registers
+//adds value and decremnts the stack pointer
+func (cpu *CPU) pushToStack(value byte, cycle *int) {
+	instructionSet := make(map[uint16]byte)
+	bytes := []byte{cpu.StackPointer, 0x01}
+	adress := binary.LittleEndian.Uint16(bytes)
+	instructionSet[adress] = value
+	cpu.Mem.ManipulateMemory(instructionSet)
+	cpu.StackPointer--
+	*cycle--
+}
+// pull from stack  removes value and increces the stack pointer
+//--------------------------------------------------------------Genaral registers INstructions
 
 //ManipulateRegister Changes the Target register to the value passed in
 func (cpu *CPU) ManipulateRegister(targetRegister *byte, value byte) {
@@ -274,6 +298,7 @@ func (cpu *CPU) LoadYImedient(cycle *int) {
 //---------------------------------------- stack stuff
 //TODO on jsr to stack look at ben eater video
 
+//see if
 //TransferXtoStackPointer ,oves X into The stack Pointer
 func (cpu *CPU) TransferXtoStackPointer(cycle *int) {
 	cpu.StackPointer = cpu.X

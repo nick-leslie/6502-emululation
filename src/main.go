@@ -12,9 +12,9 @@ func main() {
 	CPU.Mem.Memory[0xfffc] = 0x11     // set least signifecent bit of adress
 	CPU.Mem.Memory[0xfffd] = 0x13     // set most significent bit of adress
 	CPU.Mem.Memory[0x1311] = cpu.LDAZ // Load accumulator zero page 3 cycles
-	CPU.Mem.Memory[0x1312] = 0xfd     //zero page adress
-	CPU.Mem.Memory[0x00fd] = 0x4c     //acumulator value value
-	CPU.Mem.Memory[0x1313] = cpu.JMPA //jump 3 cycles
+	CPU.Mem.Memory[0x1312] = 0xfd     // zero page adress
+	CPU.Mem.Memory[0x00fd] = 0x4c     // acumulator value value
+	CPU.Mem.Memory[0x1313] = cpu.JMPA // jump 3 cycles
 	CPU.Mem.Memory[0x1314] = 0xab     // set least signifecent bit of jump adress
 	CPU.Mem.Memory[0x1315] = 0x01     // set most signifecent bit of jump adress
 	CPU.Mem.Memory[0x01ab] = cpu.LDAI // loads acumulator with next byte 2 cycles

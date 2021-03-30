@@ -301,3 +301,56 @@ func TestStackAddion(t *testing.T) {
 		t.Errorf("%x", 0x0100+0xff)
 	}
 }
+
+//ADD TEST FOR and PHA
+
+func TestTXS(t *testing.T) {
+	cpu := NewCPU()
+	Program := make(map[uint16]byte)
+	cpu.Mem.SetStartAdress(0xbbaa)
+	Program[0xbbaa] = LDXI
+	Program[0xbbab] = 0xff
+	Program[0xbbac] = TXS
+	cpu.Mem.ManipulateMemory(Program)
+	cpu.ResetCPU()
+	cycles := 4
+	cpu.Execute(&cycles)
+	if cpu.StackPointer != 0xff {
+		t.Errorf("X register:%x Stack Pointer Value:%x Program counter:%x", cpu.X, cpu.StackPointer, cpu.ProgramCounter)
+	}
+}
+
+func TestTSX(t *testing.T) {
+	cpu := NewCPU()
+	Program := make(map[uint16]byte)
+	cpu.Mem.SetStartAdress(0xbbaa)
+	Program[0xbbaa] = LDXI
+	Program[0xbbab] = 0xff
+	Program[0xbbac] = TXS
+	Program[0xbbad] = TSX
+	cpu.Mem.ManipulateMemory(Program)
+	cpu.ResetCPU()
+	cycles := 4
+	cpu.Execute(&cycles)
+	if cpu.X != 0xFF {
+		t.Errorf("X register:%x Stack Pointer Value:%x Program counter:%x", cpu.X, cpu.StackPointer, cpu.ProgramCounter)
+	}
+}
+func TestPHA(t *testing.T) {
+	cpu := NewCPU()
+	Program := make(map[uint16]byte)
+	cpu.Mem.SetStartAdress(0xbbaa)
+	Program[0xbbaa] = LDXI //2
+	Program[0xbbab] = 0xff
+	Program[0xbbac] = TXS  // 2
+	Program[0xbbad] = LDAI // 2
+	Program[0xbbae] = 0x11
+	Program[0xbbaf] = PHA // 1
+	cpu.Mem.ManipulateMemory(Program)
+	cpu.ResetCPU()
+	cycles := 7
+	cpu.Execute(&cycles)
+	if cpu.Mem.Memory[0x01ff] != 0x11 {
+		t.Errorf("X register:%x Stack Pointer Value:%x Acumulator:%x Program counter:%x MemoryLocation:%x", cpu.X, cpu.StackPointer, cpu.A, cpu.ProgramCounter, cpu.Mem.Memory[0x01FF])
+	}
+}

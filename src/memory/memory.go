@@ -35,7 +35,9 @@ func (mem *Memory) ManipulateMemory(instructionSet map[uint16]byte) {
 
 //ManipulateMemoryInStack changes memory within the stack
 func (mem *Memory) ManipulateMemoryInStack(value byte, adress byte) {
-	//mem.Memory[0x0100+adress] = value
+	byteArray := []byte{adress, 0x01}
+	finalAdress := binary.LittleEndian.Uint16(byteArray)
+	mem.Memory[finalAdress] = value
 }
 
 //SetStartAdress sets the start adress
