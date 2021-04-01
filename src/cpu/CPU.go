@@ -69,6 +69,7 @@ const (
 	//JMPI jumps to an indirecnt locaion in memory takes 5 cycles
 	JMPI byte = 0x6C
 
+	JSR byte = 0x20
 	//logic instructions-------------------------------------
 
 	//ANDI ands the acummulator and the next byte in memory in imident mode 2 cycles
@@ -196,6 +197,8 @@ func (cpu *CPU) Execute(cycle *int) {
 		case PHA:
 			cpu.pushToStack(cpu.A, cycle)
 			*cycle--
+		case JSR:
+			cpu.JumpToSubRoutine(cycle)
 		default:
 			fmt.Printf("Instruction:%x not handled\n", opCode)
 			break
@@ -230,6 +233,27 @@ func (cpu *CPU) pushToStack(value byte, cycle *int) {
 	cpu.StackPointer--
 	*cycle--
 }
+
+//adds a little endian adress to the stack subtracts 2 from cycles and stack
+func (cpu *CPU) pushAdressToStack(adress uint16, cycle *int) {
+	//break uint into bytes
+	b := make([]byte, 2)
+	binary.LittleEndian.PutUint16(b, uint16(adress))
+
+	//maniplate stack
+	instructionSet := make(map[uint16]byte)
+	bytes := []byte{cpu.StackPointer, 0x01}
+	stackAdress := binary.LittleEndian.Uint16(bytes)
+	instructionSet[stackAdress] = b[0]
+	cpu.StackPointer--
+	bytes[0] = cpu.StackPointer
+	stackAdress = binary.LittleEndian.Uint16(bytes)
+	instructionSet[stackAdress] = b[1]
+	cpu.Mem.ManipulateMemory(instructionSet)
+	cpu.StackPointer--
+	*cycle -= 2
+}
+
 // pull from stack  removes value and increces the stack pointer
 //--------------------------------------------------------------Genaral registers INstructions
 
@@ -314,6 +338,10 @@ func (cpu *CPU) JumpDirect(cycle *int) {
 	*cycle--
 	cpu.ProgramCounter = address
 }
+func (cpu *CPU) jumpDirectWithAdress(adress uint16, cycle *int) {
+	*cycle--
+	cpu.ProgramCounter = adress
+}
 
 //JumpIndirect first jumps to locaions after the instruction then reads the byte and the next byte at that locaion for new adress
 func (cpu *CPU) JumpIndirect(cycle *int) {
@@ -321,4 +349,43 @@ func (cpu *CPU) JumpIndirect(cycle *int) {
 	cpu.JumpDirect(cycle)
 	address := cpu.grabAdress(cycle)
 	cpu.ProgramCounter = address
+}
+
+// ---------------------------------------------- sub routines
+//fetch the instruction // 1
+//fetch the adress // 2
+//fetch the Next Instruction and subtract 1 store that in the stack  // 1
+//jump direct //2
+
+func (cpu *CPU) JumpToSubRoutine(cycle *int) {
+	adress := cpu.grabAdress(cycle) // cycle -2
+	returnAdress := cpu.ProgramCounter - 1
+	cpu.pushAdressToStack(returnAdress, cycle) // cycle -2
+	cpu.jumpDirectWithAdress(adress, cycle)    // -1 cycle
+}
+
+// debug-------------------------
+func (cpu *CPU) PrintStack() {
+	row := 0
+	for i := len(cpu.Mem.Memory) - 1; i > 0; i-- {
+		if i <= 0x01ff && i >= 0x0100 {
+			fmt.Printf(" %x ", cpu.Mem.Memory[i])
+			row++
+			if row > 8 {
+				fmt.Printf(" %x - %x\n", i+8, i)
+				row = 0
+			}
+		}
+	}
+}
+func (cpu *CPU) PrintMemory() {
+	row := 0
+	for i := len(cpu.Mem.Memory) - 1; i > 0; i-- {
+		fmt.Printf(" %x ", cpu.Mem.Memory[i])
+		row++
+		if row > 8 {
+			fmt.Printf(" %x - %x\n", i+8, i)
+			row = 0
+		}
+	}
 }

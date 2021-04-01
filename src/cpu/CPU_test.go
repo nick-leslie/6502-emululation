@@ -1,6 +1,7 @@
 package cpu
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -352,5 +353,61 @@ func TestPHA(t *testing.T) {
 	cpu.Execute(&cycles)
 	if cpu.Mem.Memory[0x01ff] != 0x11 {
 		t.Errorf("X register:%x Stack Pointer Value:%x Acumulator:%x Program counter:%x MemoryLocation:%x", cpu.X, cpu.StackPointer, cpu.A, cpu.ProgramCounter, cpu.Mem.Memory[0x01FF])
+	}
+}
+
+//add test of jump to sub routine
+func TestJumpToSubRoutine(t *testing.T) {
+	cpu := NewCPU()
+	Program := make(map[uint16]byte)
+	cpu.Mem.SetStartAdress(0xbbaa)
+	//initlise stack
+	Program[0xbbaa] = LDXI
+	Program[0xbbab] = 0xff
+	Program[0xbbac] = TXS
+
+	Program[0xbbad] = JSR
+	Program[0xbbae] = 0x22
+	Program[0xbbaf] = 0x11
+	cpu.Mem.ManipulateMemory(Program)
+	cpu.ResetCPU()
+	cycles := 10
+	cpu.Execute(&cycles)
+	if cpu.ProgramCounter != 0x1122 {
+		t.Errorf("Wrong program counter Curent:%x, target:0x1122", cpu.ProgramCounter)
+	}
+	fmt.Println(cpu.StackPointer)
+	checkPoint := cpu.Mem.ReturnAdressInStack(cpu.StackPointer) + 1
+	fmt.Println(checkPoint)
+	if cpu.Mem.Memory[checkPoint] != 0xbb {
+		t.Errorf("Wrong most significant Byte current:%x, target:0xbb", cpu.Mem.Memory[checkPoint])
+	}
+	checkPoint++
+	if cpu.Mem.Memory[checkPoint] != 0xaf {
+		t.Errorf("Wrong least significant Byte current:%x, target:0xaf", cpu.Mem.Memory[checkPoint])
+	}
+	fmt.Println(checkPoint)
+	cpu.printStack(cpu.Mem.Memory)
+	//new adress = 0x1122
+	//return adress should be bbab but you when use return from sub routine it should add 1
+}
+
+// bit tests
+func TestDevBYTwo(t *testing.T) {
+	ogVal := 12
+	devVal := ogVal >> 1
+	fmt.Println(ogVal)
+	fmt.Println(devVal)
+	if devVal != ogVal/2 {
+		t.Errorf("test failed")
+	}
+}
+func TestMultBYTwo(t *testing.T) {
+	ogVal := 12
+	devVal := ogVal << 1
+	fmt.Println(ogVal)
+	fmt.Println(devVal)
+	if devVal != ogVal*2 {
+		t.Errorf("test failed")
 	}
 }

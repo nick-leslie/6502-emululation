@@ -22,6 +22,7 @@ func main() {
 	CPU.ResetCPU()
 	cycles := 8
 	CPU.Execute(&cycles)
+	CPU.PrintMemory()
 	//fmt.Printf("%x\n", 0x0f&0xf0)
 }
 

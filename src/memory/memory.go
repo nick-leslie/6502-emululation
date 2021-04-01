@@ -39,6 +39,12 @@ func (mem *Memory) ManipulateMemoryInStack(value byte, adress byte) {
 	finalAdress := binary.LittleEndian.Uint16(byteArray)
 	mem.Memory[finalAdress] = value
 }
+func (mem *Memory) ReturnAdressInStack(adress byte) uint16 {
+	byteArray := []byte{adress, 0x01}
+	finalAdress := binary.LittleEndian.Uint16(byteArray)
+	fmt.Printf("%x\n", finalAdress)
+	return finalAdress
+}
 
 //SetStartAdress sets the start adress
 func (mem *Memory) SetStartAdress(address uint16) {
